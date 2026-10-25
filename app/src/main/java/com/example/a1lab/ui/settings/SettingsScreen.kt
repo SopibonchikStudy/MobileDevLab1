@@ -1,12 +1,12 @@
 package com.example.a1lab.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,7 +47,6 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onNameChange: (String) -> Unit,
     onAgeChange: (String) -> Unit,
-    onAvatarChange: (String) -> Unit,
     onThemeChange: (ThemeMode) -> Unit,
     onFontScaleChange: (Float) -> Unit,
     onSaveProfile: () -> Unit,
@@ -64,7 +63,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text("‹", style = MaterialTheme.typography.headlineMedium) }
+                    TextButton(onClick = onBack) { Text(stringResource(R.string.back_action)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
@@ -79,22 +78,12 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             SettingsCard {
-                SectionTitle(stringResource(R.string.profile_section), stringResource(R.string.profile_section_hint))
+                SectionTitle(stringResource(R.string.profile_section))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     InitialsBadge(state.name.ifBlank { state.profile.login }, size = 58)
                     Spacer(Modifier.padding(horizontal = 7.dp))
                     Column {
                         Text(state.profile.login, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(stringResource(R.string.avatar_label), style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("laugh", "mic", "star").forEach { avatar ->
-                        FilterChip(
-                            selected = state.avatar == avatar,
-                            onClick = { onAvatarChange(avatar) },
-                            label = { Text(avatar.uppercase(Locale.getDefault())) }
-                        )
                     }
                 }
                 PunchlineTextField(
@@ -119,11 +108,12 @@ fun SettingsScreen(
             SettingsCard {
                 SectionTitle(stringResource(R.string.appearance_section))
                 Text(stringResource(R.string.theme_label), fontWeight = FontWeight.Bold)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ThemeMode.entries.forEach { mode ->
                         FilterChip(
                             selected = state.settings.themeMode == mode,
                             onClick = { onThemeChange(mode) },
+                            modifier = Modifier.fillMaxWidth(),
                             label = {
                                 Text(
                                     when (mode) {
@@ -170,38 +160,28 @@ fun SettingsScreen(
                     )
                 }
                 if (state.isLoading) CircularProgressIndicator(modifier = Modifier.padding(8.dp), strokeWidth = 2.dp)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = onBackupCreate,
                         enabled = !state.isLoading,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.create_backup)) }
                     OutlinedButton(
                         onClick = onBackupRestore,
                         enabled = backup != null && !state.isLoading,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.restore_backup)) }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = onBackupDelete,
                         enabled = backup != null && !state.isLoading,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.delete_backup)) }
                     OutlinedButton(
                         onClick = onClearCache,
                         enabled = !state.isLoading,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) { Text(stringResource(R.string.clear_cache)) }
                 }
-                Text(
-                    stringResource(R.string.clear_cache_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Button(onClick = onBack, modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                Text(stringResource(R.string.back_to_data))
             }
         }
     }
@@ -211,9 +191,10 @@ fun SettingsScreen(
 private fun SettingsCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }

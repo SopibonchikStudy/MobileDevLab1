@@ -60,7 +60,6 @@ class SettingsActivity : LoggedActivity() {
                     onBack = ::returnToContent,
                     onNameChange = viewModel::updateName,
                     onAgeChange = viewModel::updateAge,
-                    onAvatarChange = viewModel::updateAvatar,
                     onThemeChange = viewModel::updateTheme,
                     onFontScaleChange = viewModel::updateFontScale,
                     onSaveProfile = viewModel::saveProfile,

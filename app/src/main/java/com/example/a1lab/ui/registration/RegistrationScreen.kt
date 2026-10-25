@@ -109,7 +109,7 @@ fun RegistrationScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(10.dp)
             ) {
                 if (state.isSubmitting) {
                     CircularProgressIndicator(modifier = Modifier.height(22.dp), strokeWidth = 2.dp)

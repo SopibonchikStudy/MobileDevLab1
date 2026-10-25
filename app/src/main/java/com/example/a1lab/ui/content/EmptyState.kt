@@ -30,7 +30,6 @@ internal fun EmptyState(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("⌁", style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.primary)
         Text(stringResource(R.string.empty_catalog_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
@@ -60,7 +59,6 @@ internal fun ErrorState(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("!", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.error)
         Text(message, color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(18.dp))
         Button(onClick = onRefresh, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.try_again)) }

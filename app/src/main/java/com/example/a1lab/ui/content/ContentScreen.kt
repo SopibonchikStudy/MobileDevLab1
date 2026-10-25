@@ -1,5 +1,6 @@
 package com.example.a1lab.ui.content
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,12 +15,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,7 +29,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -40,8 +40,6 @@ import com.example.a1lab.domain.JokeCard
 import com.example.a1lab.domain.JokeCategory
 import com.example.a1lab.domain.JokeType
 import com.example.a1lab.ui.components.InitialsBadge
-import com.example.a1lab.ui.theme.Amber
-import com.example.a1lab.ui.theme.Terracotta
 import com.example.a1lab.viewmodel.ContentUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,23 +58,14 @@ fun ContentScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(stringResource(R.string.catalog_title), fontWeight = FontWeight.Bold)
-                        Text(
-                            text = stringResource(R.string.brand_tagline),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    Text(stringResource(R.string.catalog_title), fontWeight = FontWeight.Bold)
                 },
                 actions = {
                     TextButton(
                         onClick = onOpenSettings,
-                        modifier = Modifier
-                            .size(width = 64.dp, height = 48.dp)
-                            .semantics { contentDescription = settingsDescription }
+                        modifier = Modifier.semantics { contentDescription = settingsDescription }
                     ) {
-                        Text("⚙", style = MaterialTheme.typography.titleLarge)
+                        Text(stringResource(R.string.settings))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -141,31 +130,36 @@ fun ContentScreen(
 private fun HeaderPanel(state: ContentUiState, onRefresh: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            InitialsBadge(state.userName.ifBlank { "Punchline" }, size = 52)
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.joke_feed_greeting, state.userName.ifBlank { "стендапер" }),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = stringResource(R.string.jokes_found, state.jokes.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                InitialsBadge(state.userName.ifBlank { "Punchline" }, size = 44)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.joke_feed_greeting, state.userName.ifBlank { "друг" }),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = stringResource(R.string.jokes_found, state.jokes.size),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
-            TextButton(onClick = onRefresh, enabled = !state.isLoading) {
-                Text("↻", style = MaterialTheme.typography.headlineSmall)
+            OutlinedButton(
+                onClick = onRefresh,
+                enabled = !state.isLoading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.refresh_catalog))
             }
         }
     }
@@ -173,17 +167,12 @@ private fun HeaderPanel(state: ContentUiState, onRefresh: () -> Unit) {
 
 @Composable
 private fun JokeCardItem(joke: JokeCard) {
-    val accentColor = when (joke.category) {
-        JokeCategory.PROGRAMMING -> MaterialTheme.colorScheme.primary
-        JokeCategory.PUN -> Amber
-        JokeCategory.SPOOKY -> Terracotta
-        else -> MaterialTheme.colorScheme.secondary
-    }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(15.dp)) {
             JokeBadge(joke)
@@ -197,12 +186,6 @@ private fun JokeCardItem(joke: JokeCard) {
                 )
                 if (!joke.punchline.isNullOrBlank()) {
                     Text(
-                        text = stringResource(R.string.punchline_label),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = accentColor,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
                         text = joke.punchline,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -210,27 +193,19 @@ private fun JokeCardItem(joke: JokeCard) {
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    AssistChip(onClick = {}, label = { Text(categoryText(joke.category)) })
+                    Text(
+                        categoryText(joke.category),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
                     Text(typeText(joke.type), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.words_format, joke.wordCount),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Box(
-                        modifier = Modifier
-                            .background(accentColor.copy(alpha = 0.16f), RoundedCornerShape(10.dp))
-                            .padding(horizontal = 9.dp, vertical = 5.dp)
-                    ) {
-                        Text(stringResource(R.string.safe_badge), style = MaterialTheme.typography.labelMedium, color = accentColor, fontWeight = FontWeight.Bold)
-                    }
-                }
+                Text(
+                    text = stringResource(R.string.words_format, joke.wordCount),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -250,12 +225,7 @@ private fun JokeBadge(joke: JokeCard) {
     Box(
         modifier = Modifier
             .size(width = 68.dp, height = 88.dp)
-            .background(
-                Brush.linearGradient(
-                    listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.secondaryContainer)
-                ),
-                RoundedCornerShape(14.dp)
-            )
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
             .semantics { contentDescription = badgeDescription },
         contentAlignment = Alignment.Center
     ) {

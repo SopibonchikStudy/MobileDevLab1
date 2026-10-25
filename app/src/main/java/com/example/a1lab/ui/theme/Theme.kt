@@ -6,7 +6,6 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
@@ -14,39 +13,37 @@ import com.example.a1lab.domain.AppSettings
 import com.example.a1lab.domain.ThemeMode
 
 private val LightColorScheme = lightColorScheme(
-    primary = Emerald,
-    onPrimary = WarmSurface,
-    primaryContainer = Color(0xFFD7F4EA),
-    onPrimaryContainer = Color(0xFF063D31),
-    secondary = Amber,
-    onSecondary = WarmSurface,
-    tertiary = Terracotta,
-    background = WarmCream,
-    onBackground = Ink,
-    surface = WarmSurface,
-    onSurface = Ink,
-    surfaceVariant = Color(0xFFE5EDE7),
-    onSurfaceVariant = MutedInk,
-    outline = Color(0xFF74827B),
-    error = Color(0xFFA92E28)
+    primary = Green,
+    onPrimary = Surface,
+    primaryContainer = Green.copy(alpha = 0.10f),
+    onPrimaryContainer = Green,
+    secondary = TextSecondary,
+    onSecondary = Surface,
+    background = Background,
+    onBackground = TextPrimary,
+    surface = Surface,
+    onSurface = TextPrimary,
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = TextSecondary,
+    outline = Border,
+    error = ErrorLight
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = EmeraldDark,
-    onPrimary = Color(0xFF00382D),
-    primaryContainer = Color(0xFF005142),
-    onPrimaryContainer = Color(0xFFA7F2DC),
-    secondary = AmberDark,
-    onSecondary = Color(0xFF412D00),
-    tertiary = TerracottaDark,
-    background = DeepNavy,
-    onBackground = Color(0xFFEAF2EE),
+    primary = DarkGreen,
+    onPrimary = DarkBackground,
+    primaryContainer = DarkPrimaryContainer,
+    onPrimaryContainer = DarkGreen,
+    secondary = DarkSecondary,
+    onSecondary = DarkBackground,
+    background = DarkBackground,
+    onBackground = DarkText,
     surface = DarkSurface,
-    onSurface = Color(0xFFEAF2EE),
-    surfaceVariant = Color(0xFF283C43),
-    onSurfaceVariant = DarkMuted,
-    outline = Color(0xFF849991),
-    error = Color(0xFFFFB4AB)
+    onSurface = DarkText,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkSecondary,
+    outline = DarkBorder,
+    error = ErrorDark
 )
 
 @Composable

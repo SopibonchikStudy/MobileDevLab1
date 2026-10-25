@@ -22,7 +22,7 @@
     <string name="back_action">Назад</string>
     <string name="registration_hint">Пароль сохраняется только как соль и криптографический хеш.</string>
     <string name="catalog_title">Моя коллекция шуток</string>
-    <string name="joke_feed_greeting">Смех гарантирован, %1$s?</string>
+    <string name="joke_feed_greeting">Привет, %1$s!</string>
     <string name="jokes_found">Шуток в подборке: %1$d</string>
     <string name="settings">Настройки</string>
     <string name="refresh_catalog">Обновить шутки</string>

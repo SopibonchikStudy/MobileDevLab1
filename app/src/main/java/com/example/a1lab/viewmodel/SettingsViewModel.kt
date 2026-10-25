@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.a1lab.data.BackupInfo
 import com.example.a1lab.data.BackupRepository
-import com.example.a1lab.data.BookRepository
+import com.example.a1lab.data.JokeRepository
 import com.example.a1lab.data.SettingsRepository
 import com.example.a1lab.data.UserRepository
 import com.example.a1lab.domain.AppSettings
@@ -23,7 +23,7 @@ data class SettingsUiState(
     val profile: UserProfile = UserProfile("", ""),
     val name: String = "",
     val age: String = "",
-    val avatar: String = "book",
+    val avatar: String = "laugh",
     val nameError: String? = null,
     val ageError: String? = null,
     val settings: AppSettings = AppSettings(),
@@ -41,7 +41,7 @@ class SettingsViewModel(
     private val userRepository: UserRepository,
     private val settingsRepository: SettingsRepository,
     private val backupRepository: BackupRepository,
-    private val bookRepository: BookRepository
+    private val jokeRepository: JokeRepository
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(SettingsUiState(settings = settingsRepository.settings.value))
     val state: StateFlow<SettingsUiState> = mutableState.asStateFlow()
@@ -95,7 +95,7 @@ class SettingsViewModel(
                 .onSuccess {
                     mutableState.value = mutableState.value.copy(profile = profile, hasChanges = false)
                     eventChannel.send(SettingsEvent.ProfileUpdated)
-                    eventChannel.send(SettingsEvent.Message("Профиль сохранён"))
+                    eventChannel.send(SettingsEvent.Message("Профиль стендапера сохранён"))
                 }
                 .onFailure { error -> eventChannel.send(SettingsEvent.Message(error.message ?: "Не удалось сохранить профиль")) }
         }
@@ -105,10 +105,10 @@ class SettingsViewModel(
         if (mutableState.value.isLoading) return
         mutableState.value = mutableState.value.copy(isLoading = true)
         viewModelScope.launch {
-            runCatching { backupRepository.createBackup(bookRepository.getBooks()) }
+            runCatching { backupRepository.createBackup(jokeRepository.getJokes()) }
                 .onSuccess { info ->
                     mutableState.value = mutableState.value.copy(isLoading = false, backupInfo = info)
-                    eventChannel.send(SettingsEvent.Message("Резервная копия создана"))
+                    eventChannel.send(SettingsEvent.Message("Копия шуток создана"))
                 }
                 .onFailure { error ->
                     mutableState.value = mutableState.value.copy(isLoading = false)
@@ -122,11 +122,11 @@ class SettingsViewModel(
         mutableState.value = mutableState.value.copy(isLoading = true)
         viewModelScope.launch {
             runCatching {
-                backupRepository.restoreBackup().also { bookRepository.replaceBooks(it) }
+                backupRepository.restoreBackup().also { jokeRepository.replaceJokes(it) }
             }
                 .onSuccess {
                     mutableState.value = mutableState.value.copy(isLoading = false)
-                    eventChannel.send(SettingsEvent.Message("Резервная копия восстановлена"))
+                    eventChannel.send(SettingsEvent.Message("Резервная копия шуток восстановлена"))
                 }
                 .onFailure {
                     mutableState.value = mutableState.value.copy(isLoading = false)
@@ -155,14 +155,14 @@ class SettingsViewModel(
         if (mutableState.value.isLoading) return
         mutableState.value = mutableState.value.copy(isLoading = true)
         viewModelScope.launch {
-            runCatching { bookRepository.clearCachedBooks() }
+            runCatching { jokeRepository.clearCachedJokes() }
                 .onSuccess {
                     mutableState.value = mutableState.value.copy(isLoading = false)
-                    eventChannel.send(SettingsEvent.Message("Каталог очищен. Его можно восстановить"))
+                    eventChannel.send(SettingsEvent.Message("Коллекция шуток очищена. Её можно восстановить"))
                 }
                 .onFailure {
                     mutableState.value = mutableState.value.copy(isLoading = false)
-                    eventChannel.send(SettingsEvent.Message("Не удалось очистить каталог"))
+                    eventChannel.send(SettingsEvent.Message("Не удалось очистить коллекцию шуток"))
                 }
         }
     }

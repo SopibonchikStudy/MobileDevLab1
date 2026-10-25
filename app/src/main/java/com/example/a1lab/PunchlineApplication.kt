@@ -3,7 +3,7 @@ package com.example.a1lab
 import android.app.Application
 import com.example.a1lab.data.AppContainer
 
-class BooklineApplication : Application() {
+class PunchlineApplication : Application() {
     lateinit var container: AppContainer
         private set
 

@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.a1lab.R
-import com.example.a1lab.ui.components.BooklineTextField
+import com.example.a1lab.ui.components.PunchlineTextField
 import com.example.a1lab.ui.components.BrandHeader
 import com.example.a1lab.ui.components.BrandedBackground
 import com.example.a1lab.ui.components.FieldError
@@ -59,7 +59,7 @@ fun RegistrationScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(6.dp))
-            BooklineTextField(
+            PunchlineTextField(
                 value = state.name,
                 onValueChange = onNameChange,
                 label = stringResource(R.string.display_name_label),
@@ -67,7 +67,7 @@ fun RegistrationScreen(
                 errorMessage = state.nameError,
                 enabled = !state.isSubmitting
             )
-            BooklineTextField(
+            PunchlineTextField(
                 value = state.login,
                 onValueChange = onLoginChange,
                 label = stringResource(R.string.login_label),
@@ -75,7 +75,7 @@ fun RegistrationScreen(
                 errorMessage = state.loginError,
                 enabled = !state.isSubmitting
             )
-            BooklineTextField(
+            PunchlineTextField(
                 value = state.age,
                 onValueChange = onAgeChange,
                 label = stringResource(R.string.age_label),
@@ -84,7 +84,7 @@ fun RegistrationScreen(
                 errorMessage = state.ageError,
                 enabled = !state.isSubmitting
             )
-            BooklineTextField(
+            PunchlineTextField(
                 value = state.password,
                 onValueChange = onPasswordChange,
                 label = stringResource(R.string.password_label),
@@ -93,7 +93,7 @@ fun RegistrationScreen(
                 errorMessage = state.passwordError,
                 enabled = !state.isSubmitting
             )
-            BooklineTextField(
+            PunchlineTextField(
                 value = state.passwordConfirmation,
                 onValueChange = onConfirmationChange,
                 label = stringResource(R.string.confirm_password_label),

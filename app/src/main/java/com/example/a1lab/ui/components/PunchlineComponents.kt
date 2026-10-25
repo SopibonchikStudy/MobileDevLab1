@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -68,10 +67,10 @@ fun BrandedBackground(modifier: Modifier = Modifier, content: @Composable () -> 
 }
 
 @Composable
-fun BooklineLogo(logoSize: Int = 72, modifier: Modifier = Modifier) {
-    val bookColor = MaterialTheme.colorScheme.onPrimary
-    val spineColor = MaterialTheme.colorScheme.primaryContainer
-    val logoDescription = stringResource(R.string.bookline_logo_description)
+fun PunchlineLogo(logoSize: Int = 72, modifier: Modifier = Modifier) {
+    val markColor = MaterialTheme.colorScheme.onPrimary
+    val smileColor = MaterialTheme.colorScheme.primaryContainer
+    val logoDescription = stringResource(R.string.punchline_logo_description)
     Surface(
         modifier = modifier.size(logoSize.dp),
         shape = RoundedCornerShape((logoSize * 0.3f).dp),
@@ -84,31 +83,26 @@ fun BooklineLogo(logoSize: Int = 72, modifier: Modifier = Modifier) {
                 .padding((logoSize * 0.2f).dp)
                 .semantics { contentDescription = logoDescription }
         ) {
-            val center = size.width / 2
-            val left = Path().apply {
-                moveTo(center, size.height * 0.2f)
-                quadraticTo(size.width * 0.18f, size.height * 0.08f, 0f, size.height * 0.28f)
-                lineTo(0f, size.height * 0.82f)
-                quadraticTo(size.width * 0.23f, size.height * 0.62f, center, size.height * 0.78f)
-                close()
-            }
-            val right = Path().apply {
-                moveTo(center, size.height * 0.2f)
-                quadraticTo(size.width * 0.82f, size.height * 0.08f, size.width, size.height * 0.28f)
-                lineTo(size.width, size.height * 0.82f)
-                quadraticTo(size.width * 0.77f, size.height * 0.62f, center, size.height * 0.78f)
-                close()
-            }
-            drawPath(left, color = bookColor)
-            drawPath(right, color = bookColor)
-            drawLine(spineColor, Offset(center, size.height * 0.22f), Offset(center, size.height * 0.74f), 2.dp.toPx())
-            drawPath(
-                Path().apply {
-                    moveTo(center + size.width * 0.2f, size.height * 0.28f)
-                    lineTo(center + size.width * 0.2f, size.height * 0.68f)
-                },
+            drawCircle(markColor, radius = size.minDimension * 0.43f, center = Offset(size.width / 2, size.height * 0.48f))
+            drawArc(
+                color = smileColor,
+                startAngle = 200f,
+                sweepAngle = 140f,
+                useCenter = false,
+                topLeft = Offset(size.width * 0.16f, size.height * 0.2f),
+                size = androidx.compose.ui.geometry.Size(size.width * 0.68f, size.height * 0.56f),
+                style = Stroke(width = 5.dp.toPx())
+            )
+            drawCircle(Amber, radius = size.minDimension * 0.055f, center = Offset(size.width * 0.3f, size.height * 0.47f))
+            drawCircle(Amber, radius = size.minDimension * 0.055f, center = Offset(size.width * 0.7f, size.height * 0.47f))
+            drawArc(
                 color = Amber,
-                style = Stroke(width = 3.dp.toPx())
+                startAngle = 18f,
+                sweepAngle = 144f,
+                useCenter = false,
+                topLeft = Offset(size.width * 0.26f, size.height * 0.42f),
+                size = androidx.compose.ui.geometry.Size(size.width * 0.48f, size.height * 0.34f),
+                style = Stroke(width = 4.dp.toPx())
             )
         }
     }
@@ -121,7 +115,7 @@ fun BrandHeader(modifier: Modifier = Modifier, compact: Boolean = false) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        BooklineLogo(logoSize = if (compact) 54 else 70)
+        PunchlineLogo(logoSize = if (compact) 54 else 70)
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = stringResource(R.string.brand_name),
@@ -152,7 +146,7 @@ fun SectionTitle(title: String, subtitle: String? = null, modifier: Modifier = M
 @Composable
 fun InitialsBadge(text: String, modifier: Modifier = Modifier, size: Int = 48) {
     val initials = text.trim().split(Regex("\\s+")).take(2).mapNotNull { it.firstOrNull() }.joinToString("").uppercase()
-    val safeText = remember(text) { initials.ifBlank { "B" } }
+    val safeText = remember(text) { initials.ifBlank { "P" } }
     Box(
         modifier = modifier
             .size(size.dp)

@@ -3,9 +3,9 @@ package com.example.a1lab.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.a1lab.data.BackupRepository
-import com.example.a1lab.data.BookRepository
+import com.example.a1lab.data.JokeRepository
 import com.example.a1lab.data.UserRepository
-import com.example.a1lab.domain.BookCard
+import com.example.a1lab.domain.JokeCard
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 data class ContentUiState(
     val userName: String = "",
-    val books: List<BookCard> = emptyList(),
+    val jokes: List<JokeCard> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val backupAvailable: Boolean = false
@@ -23,7 +23,7 @@ data class ContentUiState(
 
 class ContentViewModel(
     private val userRepository: UserRepository,
-    private val bookRepository: BookRepository,
+    private val jokeRepository: JokeRepository,
     private val backupRepository: BackupRepository
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(ContentUiState())
@@ -36,44 +36,56 @@ class ContentViewModel(
     }
 
     fun load(showMessage: Boolean = false) {
-        if (mutableState.value.isLoading && mutableState.value.books.isNotEmpty()) return
+        if (mutableState.value.isLoading && mutableState.value.jokes.isNotEmpty()) return
         mutableState.value = mutableState.value.copy(isLoading = true, errorMessage = null)
         viewModelScope.launch {
             val profile = userRepository.getCurrentProfile()
-            val books = runCatching { bookRepository.getBooks() }
+            val currentJokes = mutableState.value.jokes
+            val jokes = runCatching { jokeRepository.getJokes() }
             val backupAvailable = backupRepository.getBackupInfo() != null
-            books.onSuccess { list ->
+            jokes.onSuccess { list ->
+                if (list.isEmpty() && currentJokes.isNotEmpty()) return@onSuccess
                 mutableState.value = ContentUiState(
                     userName = profile?.displayName.orEmpty(),
-                    books = list,
+                    jokes = list,
                     isLoading = false,
                     backupAvailable = backupAvailable
                 )
-                if (showMessage) eventChannel.send(if (list.isEmpty()) "Каталог пуст" else "Каталог обновлён")
+                if (showMessage) eventChannel.send(if (list.isEmpty()) "Коллекция шуток пуста" else "Шутки обновлены")
             }.onFailure { error ->
-                mutableState.value = mutableState.value.copy(
-                    isLoading = false,
-                    errorMessage = error.message ?: "Не удалось загрузить каталог",
-                    backupAvailable = backupAvailable
-                )
+                if (currentJokes.isNotEmpty()) {
+                    mutableState.value = mutableState.value.copy(isLoading = false, backupAvailable = backupAvailable)
+                    eventChannel.send(error.message ?: "Не удалось загрузить шутки")
+                } else {
+                    mutableState.value = mutableState.value.copy(
+                        isLoading = false,
+                        errorMessage = error.message ?: "Не удалось загрузить шутки",
+                        backupAvailable = backupAvailable
+                    )
+                }
             }
         }
     }
 
     fun refresh() {
         if (mutableState.value.isLoading) return
-        mutableState.value = mutableState.value.copy(isLoading = true, errorMessage = null)
+        mutableState.value = mutableState.value.copy(isLoading = true)
         viewModelScope.launch {
-            runCatching { bookRepository.refreshBooks() }
-                .onSuccess { books ->
-                    mutableState.value = mutableState.value.copy(books = books, isLoading = false)
-                    eventChannel.send("Каталог обновлён")
+            runCatching { jokeRepository.refreshJokes() }
+                .onSuccess { jokes ->
+                    mutableState.value = mutableState.value.copy(jokes = jokes, isLoading = false, errorMessage = null)
+                    eventChannel.send("Новая порция шуток готова")
                 }
                 .onFailure { error ->
                     mutableState.value = mutableState.value.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Не удалось обновить каталог"
+                        errorMessage = if (mutableState.value.jokes.isEmpty()) {
+                            error.message ?: "Не удалось загрузить шутки"
+                        } else {
+                            null
+                        }
                     )
+                    eventChannel.send(error.message ?: "Не удалось обновить шутки")
                 }
         }
     }
@@ -93,15 +105,15 @@ class ContentViewModel(
         mutableState.value = mutableState.value.copy(isLoading = true, errorMessage = null)
         viewModelScope.launch {
             runCatching {
-                backupRepository.restoreBackup().also { bookRepository.replaceBooks(it) }
+                backupRepository.restoreBackup().also { jokeRepository.replaceJokes(it) }
             }
-                .onSuccess { books ->
+                .onSuccess { jokes ->
                     mutableState.value = mutableState.value.copy(
-                        books = books,
+                        jokes = jokes,
                         isLoading = false,
                         backupAvailable = true
                     )
-                    eventChannel.send("Резервная копия восстановлена")
+                    eventChannel.send("Резервная копия шуток восстановлена")
                 }
                 .onFailure {
                     mutableState.value = mutableState.value.copy(isLoading = false)

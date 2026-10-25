@@ -50,7 +50,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun BooklineTheme(settings: AppSettings = AppSettings(), content: @Composable () -> Unit) {
+fun PunchlineTheme(settings: AppSettings = AppSettings(), content: @Composable () -> Unit) {
     val dark = when (settings.themeMode) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false

@@ -21,12 +21,12 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.a1lab.logging.LoggedActivity
 import com.example.a1lab.ui.settings.SettingsScreen
-import com.example.a1lab.ui.theme.BooklineTheme
+import com.example.a1lab.ui.theme.PunchlineTheme
 import com.example.a1lab.viewmodel.SettingsEvent
 import com.example.a1lab.viewmodel.SettingsViewModel
 
 class SettingsActivity : LoggedActivity() {
-    private val container get() = (application as BooklineApplication).container
+    private val container get() = (application as PunchlineApplication).container
     private val viewModel: SettingsViewModel by viewModels {
         viewModelFactory {
             initializer {
@@ -34,7 +34,7 @@ class SettingsActivity : LoggedActivity() {
                     container.userRepository,
                     container.settingsRepository,
                     container.backupRepository,
-                    container.bookRepository
+                    container.jokeRepository
                 )
             }
         }
@@ -54,7 +54,7 @@ class SettingsActivity : LoggedActivity() {
             val appSettings by container.settingsRepository.settings.collectAsStateWithLifecycle()
             val snackbar = remember { SnackbarHostState() }
             var pendingAction by remember { mutableStateOf<PendingAction?>(null) }
-            BooklineTheme(appSettings) {
+            PunchlineTheme(appSettings) {
                 SettingsScreen(
                     state = state,
                     onBack = ::returnToContent,

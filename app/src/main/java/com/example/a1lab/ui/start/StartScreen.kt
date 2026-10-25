@@ -25,7 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.a1lab.R
-import com.example.a1lab.ui.components.BooklineTextField
+import com.example.a1lab.ui.components.PunchlineTextField
 import com.example.a1lab.ui.components.BrandHeader
 import com.example.a1lab.ui.components.BrandedBackground
 import com.example.a1lab.ui.components.FieldError
@@ -90,7 +90,7 @@ fun StartScreen(
                         )
                     }
                     Spacer(Modifier.height(4.dp))
-                    BooklineTextField(
+                    PunchlineTextField(
                         value = state.login,
                         onValueChange = onLoginChange,
                         label = stringResource(R.string.login_label),
@@ -98,7 +98,7 @@ fun StartScreen(
                         errorMessage = state.loginError,
                         enabled = !state.isSubmitting
                     )
-                    BooklineTextField(
+                    PunchlineTextField(
                         value = state.password,
                         onValueChange = onPasswordChange,
                         label = stringResource(R.string.password_label),

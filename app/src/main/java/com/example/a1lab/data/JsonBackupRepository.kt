@@ -1,7 +1,7 @@
 package com.example.a1lab.data
 
 import android.content.Context
-import com.example.a1lab.domain.BookCard
+import com.example.a1lab.domain.JokeCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -15,10 +15,10 @@ class JsonBackupRepository(context: Context) : BackupRepository {
     private val backupDirectory = File(context.applicationContext.filesDir, "backup")
     private val backupFile = File(backupDirectory, FILE_NAME)
 
-    override suspend fun createBackup(books: List<BookCard>): BackupInfo = withContext(Dispatchers.IO) {
-        if (books.isEmpty()) error("Нельзя создать копию пустого каталога")
+    override suspend fun createBackup(jokes: List<JokeCard>): BackupInfo = withContext(Dispatchers.IO) {
+        if (jokes.isEmpty()) error("Нельзя создать копию пустой коллекции шуток")
         if (!backupDirectory.exists() && !backupDirectory.mkdirs()) {
-            error("Не удалось создать каталог резервной копии")
+            error("Не удалось создать папку резервной копии")
         }
         val createdAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
             .apply { timeZone = TimeZone.getDefault() }
@@ -26,18 +26,18 @@ class JsonBackupRepository(context: Context) : BackupRepository {
         val json = JSONObject()
             .put("version", FORMAT_VERSION)
             .put("createdAt", createdAt)
-            .put("books", BookJsonCodec.encode(books))
+            .put("jokes", JokeJsonCodec.encode(jokes))
             .toString()
         val temporary = File(backupDirectory, "$FILE_NAME.tmp")
         temporary.writeText(json)
         readBackupFile(temporary)
         replaceFileAtomically(temporary, backupFile)
-        BackupInfo(createdAt, books.size)
+        BackupInfo(createdAt, jokes.size)
     }
 
-    override suspend fun restoreBackup(): List<BookCard> = withContext(Dispatchers.IO) {
+    override suspend fun restoreBackup(): List<JokeCard> = withContext(Dispatchers.IO) {
         if (!backupFile.exists()) error("Резервная копия не найдена")
-        readBackupFile(backupFile).books
+        readBackupFile(backupFile).jokes
     }
 
     override suspend fun deleteBackup() = withContext(Dispatchers.IO) {
@@ -47,17 +47,17 @@ class JsonBackupRepository(context: Context) : BackupRepository {
     override suspend fun getBackupInfo(): BackupInfo? = withContext(Dispatchers.IO) {
         if (!backupFile.exists()) return@withContext null
         runCatching { readBackupFile(backupFile) }
-            .map { BackupInfo(it.createdAt, it.books.size) }
+            .map { BackupInfo(it.createdAt, it.jokes.size) }
             .getOrNull()
     }
 
     private fun readBackupFile(file: File): BackupContent {
         val root = JSONObject(file.readText())
         require(root.getInt("version") == FORMAT_VERSION) { "Неподдерживаемая версия копии" }
-        val books = BookJsonCodec.decode(root.getJSONArray("books"))
-        require(books.isNotEmpty()) { "Копия пуста" }
-        require(books.map { it.id }.distinct().size == books.size) { "Повторяющиеся книги" }
-        return BackupContent(root.getString("createdAt"), books)
+        val jokes = JokeJsonCodec.decode(root.getJSONArray("jokes"))
+        require(jokes.isNotEmpty()) { "Копия пуста" }
+        require(jokes.map { it.id }.distinct().size == jokes.size) { "Повторяющиеся шутки" }
+        return BackupContent(root.getString("createdAt"), jokes)
     }
 
     private fun replaceFileAtomically(temporary: File, target: File) {
@@ -75,10 +75,10 @@ class JsonBackupRepository(context: Context) : BackupRepository {
         if (previous.exists()) previous.delete()
     }
 
-    private data class BackupContent(val createdAt: String, val books: List<BookCard>)
+    private data class BackupContent(val createdAt: String, val jokes: List<JokeCard>)
 
     private companion object {
-        const val FILE_NAME = "content_backup.json"
-        const val FORMAT_VERSION = 1
+        const val FILE_NAME = "jokes_backup.json"
+        const val FORMAT_VERSION = 2
     }
 }

@@ -15,13 +15,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -39,14 +36,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.a1lab.R
-import com.example.a1lab.domain.BookAvailability
-import com.example.a1lab.domain.BookCard
+import com.example.a1lab.domain.JokeCard
+import com.example.a1lab.domain.JokeCategory
+import com.example.a1lab.domain.JokeType
 import com.example.a1lab.ui.components.InitialsBadge
 import com.example.a1lab.ui.theme.Amber
-import com.example.a1lab.ui.theme.Emerald
 import com.example.a1lab.ui.theme.Terracotta
 import com.example.a1lab.viewmodel.ContentUiState
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +84,7 @@ fun ContentScreen(
         }
     ) { padding ->
         when {
-            state.isLoading && state.books.isEmpty() -> {
+            state.isLoading && state.jokes.isEmpty() -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -97,11 +93,11 @@ fun ContentScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         CircularProgressIndicator()
-                        Text(stringResource(R.string.loading_books), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.loading_jokes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
-            !state.errorMessage.isNullOrBlank() && state.books.isEmpty() -> {
+            !state.errorMessage.isNullOrBlank() && state.jokes.isEmpty() -> {
                 ErrorState(
                     message = state.errorMessage.orEmpty(),
                     onRefresh = onRefresh,
@@ -111,7 +107,7 @@ fun ContentScreen(
                         .padding(padding)
                 )
             }
-            state.books.isEmpty() -> {
+            state.jokes.isEmpty() -> {
                 EmptyState(
                     backupAvailable = state.backupAvailable,
                     onRestoreBackup = onRestoreBackup,
@@ -132,8 +128,8 @@ fun ContentScreen(
                     item {
                         HeaderPanel(state, onRefresh)
                     }
-                    items(state.books, key = { it.id }) { book ->
-                        BookCardItem(book)
+                    items(state.jokes, key = { it.id }) { joke ->
+                        JokeCardItem(joke)
                     }
                 }
             }
@@ -153,17 +149,17 @@ private fun HeaderPanel(state: ContentUiState, onRefresh: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            InitialsBadge(state.userName.ifBlank { "Bookline" }, size = 52)
+            InitialsBadge(state.userName.ifBlank { "Punchline" }, size = 52)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.catalog_greeting, state.userName.ifBlank { "читатель" }),
+                    text = stringResource(R.string.joke_feed_greeting, state.userName.ifBlank { "стендапер" }),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    text = stringResource(R.string.books_found, state.books.size),
+                    text = stringResource(R.string.jokes_found, state.jokes.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )
@@ -176,16 +172,12 @@ private fun HeaderPanel(state: ContentUiState, onRefresh: () -> Unit) {
 }
 
 @Composable
-private fun BookCardItem(book: BookCard) {
-    val statusColor = when (book.availability) {
-        BookAvailability.AVAILABLE -> Emerald
-        BookAvailability.ON_LOAN -> Amber
-        BookAvailability.UNAVAILABLE -> Terracotta
-    }
-    val statusText = when (book.availability) {
-        BookAvailability.AVAILABLE -> stringResource(R.string.available)
-        BookAvailability.ON_LOAN -> stringResource(R.string.on_loan)
-        BookAvailability.UNAVAILABLE -> stringResource(R.string.unavailable)
+private fun JokeCardItem(joke: JokeCard) {
+    val accentColor = when (joke.category) {
+        JokeCategory.PROGRAMMING -> MaterialTheme.colorScheme.primary
+        JokeCategory.PUN -> Amber
+        JokeCategory.SPOOKY -> Terracotta
+        else -> MaterialTheme.colorScheme.secondary
     }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -194,30 +186,32 @@ private fun BookCardItem(book: BookCard) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-            BookCover(book)
+            JokeBadge(joke)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Text(
-                    text = book.title,
+                    text = joke.setup,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 2,
+                    maxLines = 6,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = book.author,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    AssistChip(onClick = {}, label = { Text(book.genre) })
+                if (!joke.punchline.isNullOrBlank()) {
                     Text(
-                        text = stringResource(R.string.rating_format, String.format(Locale.getDefault(), "%.1f", book.rating)),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.secondary,
+                        text = stringResource(R.string.punchline_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = accentColor,
                         fontWeight = FontWeight.Bold
                     )
+                    Text(
+                        text = joke.punchline,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    AssistChip(onClick = {}, label = { Text(categoryText(joke.category)) })
+                    Text(typeText(joke.type), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -225,16 +219,16 @@ private fun BookCardItem(book: BookCard) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(R.string.year_format, book.year),
+                        text = stringResource(R.string.words_format, joke.wordCount),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Box(
                         modifier = Modifier
-                            .background(statusColor.copy(alpha = 0.16f), RoundedCornerShape(10.dp))
+                            .background(accentColor.copy(alpha = 0.16f), RoundedCornerShape(10.dp))
                             .padding(horizontal = 9.dp, vertical = 5.dp)
                     ) {
-                        Text(statusText, style = MaterialTheme.typography.labelMedium, color = statusColor, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.safe_badge), style = MaterialTheme.typography.labelMedium, color = accentColor, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -243,26 +237,55 @@ private fun BookCardItem(book: BookCard) {
 }
 
 @Composable
-private fun BookCover(book: BookCard) {
-    val initials = book.author.trim().split(Regex("\\s+")).take(2).mapNotNull { it.firstOrNull() }.joinToString("").uppercase()
-    val coverDescription = stringResource(R.string.book_cover_description, book.title)
+private fun JokeBadge(joke: JokeCard) {
+    val emoji = when (joke.category) {
+        JokeCategory.PROGRAMMING -> "</>"
+        JokeCategory.PUN -> "?!"
+        JokeCategory.SPOOKY -> "BOO"
+        JokeCategory.CHRISTMAS -> "HO"
+        JokeCategory.DARK -> "..."
+        else -> "HA"
+    }
+    val badgeDescription = stringResource(R.string.joke_badge_description, categoryText(joke.category))
     Box(
         modifier = Modifier
-            .size(width = 74.dp, height = 108.dp)
+            .size(width = 68.dp, height = 88.dp)
             .background(
                 Brush.linearGradient(
                     listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.secondaryContainer)
                 ),
                 RoundedCornerShape(14.dp)
             )
-            .semantics { contentDescription = coverDescription },
+            .semantics { contentDescription = badgeDescription },
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(initials.ifBlank { "B" }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(emoji, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text("BOOKLINE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("JOKE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
+
+@Composable
+private fun categoryText(category: JokeCategory): String = stringResource(
+    when (category) {
+        JokeCategory.PROGRAMMING -> R.string.category_programming
+        JokeCategory.MISC -> R.string.category_misc
+        JokeCategory.DARK -> R.string.category_dark
+        JokeCategory.PUN -> R.string.category_pun
+        JokeCategory.SPOOKY -> R.string.category_spooky
+        JokeCategory.CHRISTMAS -> R.string.category_christmas
+        JokeCategory.UNKNOWN -> R.string.category_unknown
+    }
+)
+
+@Composable
+private fun typeText(type: JokeType): String = stringResource(
+    when (type) {
+        JokeType.SINGLE -> R.string.type_single
+        JokeType.TWOPART -> R.string.type_twopart
+        JokeType.UNKNOWN -> R.string.type_unknown
+    }
+)
 

@@ -12,11 +12,11 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.a1lab.logging.LoggedActivity
 import com.example.a1lab.ui.registration.RegistrationScreen
-import com.example.a1lab.ui.theme.BooklineTheme
+import com.example.a1lab.ui.theme.PunchlineTheme
 import com.example.a1lab.viewmodel.RegistrationViewModel
 
 class RegistrationActivity : LoggedActivity() {
-    private val container get() = (application as BooklineApplication).container
+    private val container get() = (application as PunchlineApplication).container
     private val viewModel: RegistrationViewModel by viewModels {
         viewModelFactory { initializer { RegistrationViewModel(container.userRepository) } }
     }
@@ -32,7 +32,7 @@ class RegistrationActivity : LoggedActivity() {
         setContent {
             val state by viewModel.state.collectAsStateWithLifecycle()
             val appSettings by container.settingsRepository.settings.collectAsStateWithLifecycle()
-            BooklineTheme(appSettings) {
+            PunchlineTheme(appSettings) {
                 RegistrationScreen(
                     state = state,
                     onNameChange = viewModel::updateName,

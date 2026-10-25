@@ -1,114 +1,90 @@
-# Bookline — требования к архитектуре
+# Punchline — требования к архитектуре
 
-Нормативный документ для лабораторной работы № 1 по дисциплине «Разработка
-мобильных приложений». Описывает целевую структуру Android-приложения **Bookline**
-(онлайн-библиотека), обязанности компонентов и правила взаимодействия между ними.
+Нормативный документ лабораторной работы № 1. Описывает Android-приложение
+**Punchline** (коллекция шуток JokeAPI), обязанности компонентов и правила их
+взаимодействия.
 
 Связанные документы:
 
 - [Описание проекта](PROJECT_DESCRIPTION.md)
 - [Точные ограничения](CONSTRAINTS.md)
-- [Исходное задание](<extras/Android. Лабораторная работа 1.pdf>)
+- [Практики проекта](app/Practices.md)
 
 ## 1. Архитектурная цель
 
-Архитектура должна обеспечить выполнение четырёх задач одновременно:
+Архитектура обеспечивает одновременно:
 
-1. каждый пользовательский экран реализуется отдельной Activity;
-2. состояние экранов и бизнес-логика не дублируются внутри Activity;
-3. данные можно заменить с локального демонстрационного каталога на серверный
-   источник без изменения Compose-экранов;
-4. учётные данные, каталог и резервная копия имеют явные границы хранения.
+1. отдельную Activity для каждого экрана;
+2. единый источник состояния для Compose UI и отсутствие бизнес-логики в
+   Activity;
+3. загрузку шуток из JokeAPI через абстракцию `JokeRepository` без сетевых типов
+   в UI;
+4. явные границы для профиля, настроек, кэша и резервной копии.
 
-Для ЛР 1 используется прагматичная многослойная архитектура: Activity отвечает
-за композицию экрана и навигацию, Compose UI — за отображение состояния,
-ViewModel — за операции конкретного экрана, репозитории — за получение и
-сохранение данных.
+Используется прагматичный MVVM: Activity управляет навигацией и подпиской на
+состояние, ViewModel выполняет сценарии, репозитории получают и сохраняют данные,
+Compose отображает неизменяемое состояние.
 
 ## 2. Технологический базис
 
-| Компонент | Обязательный выбор |
+| Компонент | Выбор |
 |---|---|
 | Язык | Kotlin |
 | UI | Jetpack Compose |
-| UI-библиотека | Material Design 3 (`androidx.compose.material3`) |
+| UI-библиотека | Material Design 3 |
 | Минимальная версия | API 24 |
-| Сборка | Gradle Kotlin DSL |
-| Activity | `ComponentActivity` из AndroidX Activity Compose |
-| Асинхронность | Kotlin Coroutines и `Flow`/`StateFlow` |
-| Хранение профиля | DataStore Preferences либо `SharedPreferences` |
-| Хранение каталога и копии | JSON-файл во внутреннем каталоге приложения |
-| Тесты | JUnit для domain/data, Compose UI Test для ключевых экранов |
+| Сборка | Gradle Kotlin DSL и version catalog |
+| Activity | `ComponentActivity` через общий `LoggedActivity` |
+| Асинхронность | Coroutines, `StateFlow`, `Channel` |
+| Сеть | `HttpURLConnection` из стандартной библиотеки |
+| Профиль и настройки | `SharedPreferences` |
+| Кэш и копия | JSON-файлы внутри `filesDir` |
+| Тесты | JUnit для domain/data |
 
-Версии библиотек задаются в `gradle/libs.versions.toml`, а не отдельными
-литералами по коду. Новые зависимости добавляются только при наличии конкретной
-задачи из требований.
+Отдельная HTTP-библиотека не нужна: текущий контракт JokeAPI прост, а
+`HttpURLConnection` не добавляет зависимости и доступен на API 24. Сетевой вызов
+выполняется в `Dispatchers.IO`; главный поток не блокируется.
 
 ## 3. Разделение ответственности
 
 ### 3.1. Activity
 
-В приложении должны быть четыре Activity:
-
 | Activity | Ответственность |
 |---|---|
-| `StartActivity` | стартовое состояние, вход, переход к регистрации |
-| `RegistrationActivity` | регистрация и возврат результата |
-| `ContentActivity` | каталог книг авторизованного пользователя |
-| `SettingsActivity` | профиль, оформление и резервная копия |
+| `StartActivity` | брендинг, вход, запуск регистрации |
+| `RegistrationActivity` | регистрация и возврат логина |
+| `ContentActivity` | загрузка и показ коллекции шуток, переход к настройкам |
+| `SettingsActivity` | профиль, оформление, управление копией |
 
-Activity может:
+Activity может извлечь навигационный параметр, создать ViewModel через фабрику,
+вызвать `setContent`, обработать результат Activity Result и запустить или
+закрыть следующую Activity.
 
-- получить Intent и извлечь переданные параметры;
-- создать ViewModel через фабрику;
-- вызвать `setContent` и передать состояние в корневой composable;
-- обработать системный результат, например `ActivityResult`;
-- запустить следующую Activity;
-- завершить себя методом `finish()` после успешного перехода.
-
-Activity не должна:
-
-- содержать бизнес-логику валидации;
-- напрямую читать и записывать JSON-файл;
-- хранить отдельные поля формы как источник истины;
-- проверять пароль по незахешированному значению;
-- формировать список карточек внутри разметки;
-- выполнять сетевые или файловые операции в главном потоке;
-- использовать Compose Navigation как замену четырём Activity.
+Activity не должна читать JSON, выполнять HTTP-запросы, проверять пароль,
+формировать карточки или выполнять файловые операции в главном потоке.
 
 ### 3.2. Compose UI
 
-Compose-слой делится на три вида компонентов:
+UI разделён на экран, повторно используемые компоненты и тему. Экран получает
+`UiState` и функции-колбэки, не обращается к `Context`, `File`, HTTP или
+репозиторию. Корневой composable подписывается на `StateFlow` через
+`collectAsStateWithLifecycle`.
 
-1. **Экраны** — получают `UiState` и колбэки событий, не обращаются к
-   репозиториям напрямую.
-2. **Компоненты** — карточка книги, поле формы, пустое состояние, диалог
-   подтверждения, индикатор загрузки.
-3. **Тема** — цветовая схема, типографика и масштаб шрифта.
-
-Экран должен быть stateless там, где это практически возможно. Корневой
-composable подписывается на состояние ViewModel, а вложенные элементы не знают о
-ViewModel. UI не должен самостоятельно преобразовывать DTO сетевого API в модель
-интерфейса.
-
-Имена ui-состояний:
+Целевое состояние ленты:
 
 ```kotlin
 data class ContentUiState(
     val userName: String = "",
-    val books: List<BookCard> = emptyList(),
-    val isLoading: Boolean = false,
+    val jokes: List<JokeCard> = emptyList(),
+    val isLoading: Boolean = true,
     val errorMessage: String? = null,
     val backupAvailable: Boolean = false
 )
 ```
 
-Допустимое расширение состояния другими полями не отменяет требования к единому
-источнику истины для одного экрана.
+`JokeCard` — UI-модель. Сырой JSON JokeAPI в Compose не передаётся.
 
 ### 3.3. ViewModel
-
-Каждому Activity соответствует отдельная ViewModel:
 
 | Activity | ViewModel |
 |---|---|
@@ -117,45 +93,26 @@ data class ContentUiState(
 | `ContentActivity` | `ContentViewModel` |
 | `SettingsActivity` | `SettingsViewModel` |
 
-ViewModel:
-
-- принимает действия пользователя через публичные методы;
-- валидирует ввод и обновляет `StateFlow<UiState>`;
-- вызывает репозитории и хранилища;
-- не содержит ссылок на `Activity`, `Context`, `View` или `NavController`;
-- переживает изменение конфигурации;
-- отменяет фоновые операции при очистке через `viewModelScope`.
-
-ViewModel не должна закрывать или запускать Activity. Навигационное следствие
-представляется одноразовым событием, например `SharedFlow<StartEvent>`, которое
-обрабатывает Activity. Простые переходы без результата допустимо обрабатывать
-колбэком из UI.
+ViewModel принимает события UI, валидирует ввод, вызывает репозитории и
+обновляет read-only `StateFlow`. Одноразовые сообщения и навигационные следствия
+идут через буферизованный `Channel`. ViewModel не хранит `Activity`, `View`,
+`Context` или `Compose`-типы и отменяет работу через `viewModelScope`.
 
 ### 3.4. Domain
 
-Domain-слой содержит модель книги, статус доступности и чистые правила
-валидации. Он не импортирует Android UI, Activity, Compose, JSON- или сетевые
-библиотеки.
-
-Основные типы:
+Domain не импортирует Android, Compose, JSON или HTTP.
 
 ```kotlin
-data class BookCard(
+data class JokeCard(
     val id: Int,
-    val title: String,
-    val author: String,
-    val genre: String,
-    val year: Int,
-    val rating: Double,
-    val availability: BookAvailability,
-    val coverUrl: String?
+    val category: JokeCategory,
+    val type: JokeType,
+    val setup: String,
+    val punchline: String?,
+    val safe: Boolean,
+    val language: String,
+    val wordCount: Int
 )
-
-enum class BookAvailability {
-    AVAILABLE,
-    ON_LOAN,
-    UNAVAILABLE
-}
 
 sealed interface ValidationResult {
     data object Valid : ValidationResult
@@ -163,196 +120,157 @@ sealed interface ValidationResult {
 }
 ```
 
-Требования к domain-логике:
+`JokeCategory` включает `PROGRAMMING`, `MISC`, `DARK`, `PUN`, `SPOOKY`,
+`CHRISTMAS` и `UNKNOWN`; `JokeType` — `SINGLE`, `TWOPART` и `UNKNOWN`.
+Неизвестные категории и типы из API должны разбираться без падения приложения.
 
-- одна функция проверяет одно правило;
-- сообщения об ошибках не зависят от Activity;
-- проверка регистрации и входа использует одинаковые правила для логина и
-  пароля;
-- доменная модель не содержит `Bitmap`, `Uri` или Compose-типы;
-- отсутствие доступной книги не считается ошибкой загрузки.
+Валидация профиля проверяет непустые имя, логин, длину пароля, совпадение
+подтверждения и возраст 6–120 лет. Одна функция проверяет одно правило; UI
+показывает сообщение рядом с соответствующим полем.
 
 ### 3.5. Data
 
-Слой данных реализует контракты, определённые для UI/domain:
+Основные контракты:
 
 ```kotlin
-interface BookRepository {
-    suspend fun getBooks(): List<BookCard>
-    suspend fun refreshBooks(): List<BookCard>
+interface JokeRepository {
+    suspend fun getJokes(): List<JokeCard>
+    suspend fun refreshJokes(): List<JokeCard>
+    suspend fun replaceJokes(jokes: List<JokeCard>)
+    suspend fun clearCachedJokes()
 }
 
 interface BackupRepository {
-    suspend fun createBackup(books: List<BookCard>): BackupInfo
-    suspend fun restoreBackup(): List<BookCard>
+    suspend fun createBackup(jokes: List<JokeCard>): BackupInfo
+    suspend fun restoreBackup(): List<JokeCard>
     suspend fun deleteBackup()
     suspend fun getBackupInfo(): BackupInfo?
 }
-
-interface UserRepository {
-    suspend fun register(profile: UserProfile, password: CharArray): Result<Unit>
-    suspend fun authenticate(login: String, password: CharArray): Result<UserProfile>
-    suspend fun getCurrentProfile(): UserProfile?
-    suspend fun updateProfile(profile: UserProfile): Result<Unit>
-}
 ```
 
-Допускается уточнение сигнатур, если сохраняются границы ответственности и
-асинхронность. Реализации не должны протекать в UI: Compose-код не работает с
-`File`, `JSONObject`, HTTP-клиентом или `SharedPreferences` напрямую.
+`RemoteJokeRepository`:
 
-Для ЛР 1 используются две реализации `BookRepository`:
+- выполняет запросы на `https://v2.jokeapi.dev/joke/Any`;
+- передаёт `type=twopart`, `amount=10`, `safe-mode`, `lang=en`;
+- выполняет до трёх пакетных запросов, пока не собрано 12 уникальных шуток;
+- ограничивает ответ 20 шутками;
+- преобразует элементы `jokes` в `JokeCard` через `JokeJsonCodec`;
+- сохраняет успешный результат в `jokes_cache.json` атомарно;
+- при ошибке не заменяет существующий кэш;
+- не логирует полный ответ API, персональные данные или учётные данные.
 
-- `DemoBookRepository` — возвращает 12 встроенных книг и является активным
-  источником;
-- будущая `RemoteBookRepository` — контракт для ЛР 3, не требуется в текущей
-  сдаче.
+`JsonBackupRepository` читает и записывает `jokes_backup.json` версии 2. Перед
+заменой файла запись проверяется во временном файле. Копия содержит
+`createdAt`, версию и массив шуток.
 
 ### 3.6. Storage
 
-Хранилище делится по назначению:
+| Данные | Место хранения |
+|---|---|
+| профиль | `SharedPreferences` `punchline_user` |
+| соль и хеш пароля | `SharedPreferences` `punchline_user` |
+| тема и шрифт | `SharedPreferences` `punchline_settings` |
+| кэш ленты | `filesDir/jokes_cache.json` |
+| резервная копия | `filesDir/backup/jokes_backup.json` |
+| флаг инициализации | `SharedPreferences` `joke_cache_state` |
 
-| Данные | Место хранения | Формат |
-|---|---|---|
-| профиль пользователя | DataStore/SharedPreferences | примитивные поля |
-| соль и хеш пароля | DataStore/SharedPreferences | Base64 |
-| настройки темы и шрифта | DataStore/SharedPreferences | примитивные поля |
-| каталог в кэше | `filesDir`/`cacheDir` | JSON |
-| резервная копия | `filesDir/backup` | `content_backup.json` |
-
-Пароль в открытом виде не хранится ни в памяти после завершения проверки, ни в
-файле, ни в логах. Для ЛР 1 разрешён salted SHA-256, но предпочтителен
-`PBKDF2WithHmacSHA256`. Соль уникальна для пользователя. Это учебная реализация
-локальной проверки, не замена серверной аутентификации.
+Пароль не хранится в открытом виде. Хеширование использует HMAC-SHA256 с
+уникальной солью и итерациями; массивы символов пароля очищаются после
+использования. Соль и хеш никогда не передаются между Activity через `Intent`.
 
 ## 4. Потоки данных
 
-### Вход
+### Авторизация
 
 ```text
-поле UI → RegistrationViewModel/StartViewModel → PasswordHasher
-→ UserRepository → DataStore → StateFlow → StartActivity
+UI → StartViewModel/RegistrationViewModel → Validation → UserRepository
+→ SharedPreferences → StateFlow → StartActivity
 ```
 
-### Каталог
+### Загрузка шуток
 
 ```text
-DemoBookRepository → ContentViewModel → StateFlow<ContentUiState>
-→ LazyColumn → BookCard composable
+JokeAPI → HttpURLConnection → JSONObject → JokeJsonCodec
+→ List<JokeCard> → RemoteJokeRepository (кэш) → ContentViewModel
+→ StateFlow<ContentUiState> → LazyColumn → JokeCard composable
 ```
 
 ### Резервная копия
 
 ```text
-Settings UI → SettingsViewModel → BackupRepository
-→ content_backup.json → BackupInfo → StateFlow → Settings UI
+SettingsScreen → SettingsViewModel → current List<JokeCard>
+→ JsonBackupRepository → jokes_backup.json → BackupInfo → SettingsUiState
 ```
 
-Одноразовые сообщения (`Success`, `Error`, `Navigate`) передаются отдельно от
-постоянного состояния. Повторное отображение экрана не должно повторять
-уведомление или переход.
+Одноразовые сообщения об успехе и ошибке не входят в долговременное UI-состояние:
+повторная рекомпозиция и поворот экрана не должны повторять уведомление или
+переход.
 
 ## 5. Навигационный контракт
 
 ```text
-StartActivity ──«Регистрация»──▶ RegistrationActivity
+StartActivity ──«Создать аккаунт»──▶ RegistrationActivity
 RegistrationActivity ──RESULT_OK(login)──▶ StartActivity
 StartActivity ──успешный вход──▶ ContentActivity [finish StartActivity]
-ContentActivity ──«Настройки»──▶ SettingsActivity [startActivityForResult]
-SettingsActivity ──RESULT_OK(settings changed)──▶ ContentActivity [finish SettingsActivity]
+ContentActivity ──«Настройки»──▶ SettingsActivity [Activity Result]
+SettingsActivity ──RESULT_OK(profileChanged)──▶ ContentActivity [finish SettingsActivity]
 ```
 
-Требования:
+Через `Intent` передаётся только логин и признак изменения профиля. Пароль,
+соль, хеш и полный профиль передавать нельзя. Повторный клик по навигационной
+кнопке не создаёт дубликат Activity. Из настроек системная кнопка «Назад»
+возвращает только к коллекции.
 
-- `StartActivity` использует `registerForActivityResult` для регистрации;
-- успешная регистрация возвращает логин через `Intent` с ключом
-  `EXTRA_LOGIN`, а не глобальную переменную;
-- после входа активность стартового экрана закрывается;
-- настройки возвращают только к каталогу; глубина истории от настроек до
-  стартового экрана не должна превышать два экрана;
-- повторный клик по навигационной кнопке не создаёт вторую Activity;
-- передача профиля и пароля в Intent запрещена; между Activity передаётся только
-  идентификатор или логин;
-- восстановление после поворота экрана не должно повторно выполнять успешный
-  вход, регистрацию или восстановление копии.
+## 6. Жизненный цикл
 
-Для межэкранного результата используется типизированный контракт:
+Все Activity наследуют `LoggedActivity`. Переопределены `onCreate`, `onStart`,
+`onRestart`, `onResume`, `onPause`, `onStop` и `onDestroy`. Сначала вызывается
+`super`, затем выполняется запись:
 
-```kotlin
-object RegistrationContract : ActivityResultContract<Unit, String?>() {
-    override fun createIntent(context: Context, input: Unit) =
-        Intent(context, RegistrationActivity::class.java)
-
-    override fun parseResult(resultCode: Int, intent: Intent?): String? =
-        intent?.getStringExtra(RegistrationActivity.EXTRA_LOGIN)
-            ?.takeIf { resultCode == Activity.RESULT_OK }
-}
+```text
+ContentActivity: onStart
 ```
 
-## 6. Жизненный цикл и журналирование
+Тег — `Lab1Lifecycle`. В журналах нет пароля, соли, хеша и полного содержимого
+шуток. В отчёт включаются частичное перекрытие стартового экрана и полный
+маршрут через четыре Activity.
 
-Все четыре Activity наследуют `LoggedActivity : ComponentActivity()`.
-Базовый класс переопределяет методы и пишет записи через единый тег
-`Lab1Lifecycle`:
-
-```kotlin
-open class LoggedActivity : ComponentActivity() {
-    protected fun logLifecycle(method: String) {
-        Log.d("Lab1Lifecycle", "${this::class.simpleName}: $method")
-    }
-}
-```
-
-Обязательно логируются:
-
-`onCreate`, `onStart`, `onRestart`, `onResume`, `onPause`, `onStop`,
-`onDestroy`.
-
-В каждом переопределении сначала вызывается `super`, затем пишется запись.
-Формат строки строго `[класс]: [метод]` без дополнительного префикса между
-ними. В отчёт включаются фрагменты для частичного перекрытия и полного маршрута
-из PDF.
-
-## 7. Обработка ошибок и состояний
-
-Каждая операция UI классифицируется как `Idle`, `Loading`, `Success` или
-`Error`. Для экрана каталога дополнительно предусматривается `Empty`.
+## 7. Состояния и ошибки
 
 | Ситуация | Поведение |
 |---|---|
-| неверный ввод формы | ошибка под соответствующим полем |
-| неверные учётные данные | общая ошибка формы, поля не очищаются |
-| пустой каталог | пустое состояние с доступными действиями |
-| ошибка чтения JSON | сообщение об ошибке, файл не перезаписывается |
-| отсутствие копии | кнопки восстановления и удаления недоступны |
-| системная ошибка записи | успех не показывается, исходные данные сохраняются |
+| первая загрузка | индикатор прогресса, запрос JokeAPI |
+| успешная загрузка | 12–20 уникальных карточек и счётчик |
+| сохранённый кэш | показ без обязательного сетевого запроса |
+| ошибка сети или HTTP | сообщение и повторная загрузка |
+| меньше 12 уникальных шуток | ошибка без перезаписи прежнего кэша |
+| пустой кэш | состояние с восстановлением копии и переходом в настройки |
+| отсутствие копии | восстановление и удаление неактивны |
+| неверный ввод | текст ошибки у поля |
+| ошибка записи копии | сообщение, старый файл по возможности сохраняется |
 
-Исключения не должны завершать приложение. Граница преобразования исключений —
-ViewModel или репозиторий; UI получает типизированное или понятное пользователю
-сообщение. В Logcat не выводятся пароли, хеши, персональные данные и полное
-содержимое файлов.
+Сетевые исключения и ошибки JSON преобразуются в понятные сообщения не позднее
+ViewModel. ViewModel не обязана разбирать исключения, если репозиторий уже
+возвращает или выбрасывает сообщение, пригодное для UI. Приложение не должно
+падать из-за сетевой ошибки API или повреждённого файла.
 
 ## 8. Тестируемость
 
-Domain-валидация и преобразования данных должны тестироваться без Android
-эмулятора. Репозитории и хранилища передаются в ViewModel через интерфейсы.
-Запрещено создавать синглтоны хранилища непосредственно внутри ViewModel, если
-это мешает подмене реализации в тесте.
+Минимальные проверки без Android-эмулятора:
 
-Минимальный набор проверок:
+- границы имени, логина, пароля и возраста;
+- политика объединения пакетов JokeAPI;
+- дедупликация по `id` и ограничение ленты двадцатью шутками;
+- достижение минимального размера ленты в 12 шуток;
+- интеграционная проверка JSON на Android;
+- отсутствие перезаписи кэша при неуспешной сетевой загрузке;
+- уникальность `id` и ограничения размера коллекции;
+- наличие сообщений об ошибках на экране.
 
-- границы логина, пароля, имени и возраста;
-- успешная и неуспешная регистрация;
-- успешная и неуспешная аутентификация;
-- создание, чтение и удаление резервной копии;
-- обработка некорректного JSON;
-- состав и количество карточек каталога;
-- корректность маршрутов Activity и отсутствие дублирования;
-- наличие строк жизненного цикла всех Activity.
+Репозитории передаются в ViewModel через интерфейсы и могут быть заменены
+фейками. `JokeJsonCodec` не должен зависеть от Activity.
 
 ## 9. Структура проекта
-
-Целевая структура для пакета `com.example.a1lab`:
 
 ```text
 com.example.a1lab
@@ -360,22 +278,27 @@ com.example.a1lab
 ├── RegistrationActivity.kt
 ├── ContentActivity.kt
 ├── SettingsActivity.kt
-├── logging/
-│   └── LoggedActivity.kt
+├── PunchlineApplication.kt
+├── logging/LoggedActivity.kt
+├── navigation/ActivityContracts.kt
 ├── domain/
-│   ├── BookCard.kt
-│   ├── BookAvailability.kt
+│   ├── JokeCard.kt
+│   ├── AppSettings.kt
 │   ├── UserProfile.kt
 │   └── Validation.kt
 ├── data/
-│   ├── BookRepository.kt
-│   ├── DemoBookRepository.kt
+│   ├── JokeRepository.kt
+│   ├── RemoteJokeRepository.kt
+│   ├── JokeJsonCodec.kt
 │   ├── BackupRepository.kt
 │   ├── JsonBackupRepository.kt
-│   └── UserRepository.kt
+│   ├── SettingsRepository.kt
+│   ├── UserRepository.kt
+│   └── AppContainer.kt
 ├── storage/
-│   ├── PreferenceUserStorage.kt
-│   └── SettingsStorage.kt
+│   ├── PasswordHasher.kt
+│   ├── PreferenceSettingsRepository.kt
+│   └── PreferenceUserRepository.kt
 ├── ui/
 │   ├── start/
 │   ├── registration/
@@ -390,41 +313,17 @@ com.example.a1lab
     └── SettingsViewModel.kt
 ```
 
-Разделение по пакетам обязательно по смыслу, точные имена файлов можно
-уточнять. Не допускается размещать все Activity, ViewModel, модели и работу с
-файлами в одном файле.
+## 10. Критерии архитектурной приёмки
 
-## 10. Совместимость с последующей сетевой работой
-
-Сетевой этап должен подключаться через реализацию `BookRepository`, а не через
-изменения экранов. Сетевые DTO не передаются в Compose. Маппинг DTO → `BookCard`
-находится в data-слое.
-
-Для будущего API предусматриваются:
-
-- загрузка данных порциями;
-- явные состояния загрузки и ошибки;
-- сохранение успешно полученного каталога в локальный кэш;
-- выбор между кэшем и резервной копией при отсутствии сети;
-- отмена запросов при уходе с экрана.
-
-Эти возможности не требуется реализовывать в ЛР 1, но архитектура не должна
-препятствовать их добавлению.
-
-## 11. Архитектурные критерии приёмки
-
-- [ ] В проекте есть четыре Activity, назначенные в манифесте.
-- [ ] `StartActivity` объявлена единственной LAUNCHER-активностью.
-- [ ] Каждый экран получает данные из ViewModel или stateless-состояния.
-- [ ] UI не работает с файлами, паролями и источниками данных напрямую.
-- [ ] Модель `BookCard` не зависит от Android UI и формата API.
-- [ ] Сетевой источник можно заменить без изменения экранов каталога.
-- [ ] Профиль, настройки и каталог имеют явные места хранения.
-- [ ] Резервная копия — отдельный JSON-файл с версией формата.
+- [ ] В манифесте объявлены четыре Activity, LAUNCHER только у стартовой.
+- [ ] UI не работает напрямую с HTTP, JSON, файлами и паролями.
+- [ ] `JokeCard` не зависит от Android UI и формата ответа JokeAPI.
+- [ ] `JokeRepository` позволяет заменить `RemoteJokeRepository` фейком.
+- [ ] Сетевой запрос выполняется вне главного потока.
+- [ ] Успешная загрузка сохраняется в кэш; ошибка не удаляет старые шутки.
+- [ ] Копия шуток — отдельный JSON-файл с версией формата.
+- [ ] Профиль, настройки, кэш и копия имеют явные места хранения.
 - [ ] Пароли не сохраняются и не логируются в открытом виде.
-- [ ] Фоновые операции выполняются через Coroutines и `viewModelScope`.
-- [ ] Четыре Activity наследуют общий `LoggedActivity`.
-- [ ] Логи содержат только имя класса и метода в требуемом формате.
-- [ ] Навигация с использованием результата реализована через Activity Result
-      API; неактуальные экраны закрываются.
-- [ ] Domain-логика имеет unit-тесты, не требующие Android-эмулятора.
+- [ ] Все Activity наследуют `LoggedActivity` и пишут логи в нужном формате.
+- [ ] Регистрация и настройки используют типизированные Activity Result.
+- [ ] Domain и политика объединения пакетов JokeAPI покрыты unit-тестами.

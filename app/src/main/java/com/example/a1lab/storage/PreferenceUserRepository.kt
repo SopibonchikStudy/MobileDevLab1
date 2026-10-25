@@ -65,12 +65,12 @@ class PreferenceUserRepository(
             login = login,
             displayName = preferences.getString(KEY_NAME, login) ?: login,
             age = age,
-            avatar = preferences.getString(KEY_AVATAR, "book") ?: "book"
+            avatar = preferences.getString(KEY_AVATAR, "laugh") ?: "laugh"
         )
     }
 
     private companion object {
-        const val PREFS_NAME = "bookline_user"
+        const val PREFS_NAME = "punchline_user"
         const val KEY_LOGIN = "login"
         const val KEY_NAME = "display_name"
         const val KEY_AGE = "age"

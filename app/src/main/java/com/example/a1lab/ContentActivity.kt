@@ -19,15 +19,15 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.a1lab.logging.LoggedActivity
 import com.example.a1lab.navigation.SettingsContract
 import com.example.a1lab.ui.content.ContentScreen
-import com.example.a1lab.ui.theme.BooklineTheme
+import com.example.a1lab.ui.theme.PunchlineTheme
 import com.example.a1lab.viewmodel.ContentViewModel
 
 class ContentActivity : LoggedActivity() {
-    private val container get() = (application as BooklineApplication).container
+    private val container get() = (application as PunchlineApplication).container
     private val viewModel: ContentViewModel by viewModels {
         viewModelFactory {
             initializer {
-                ContentViewModel(container.userRepository, container.bookRepository, container.backupRepository)
+                ContentViewModel(container.userRepository, container.jokeRepository, container.backupRepository)
             }
         }
     }
@@ -52,7 +52,7 @@ class ContentActivity : LoggedActivity() {
             BackHandler {
                 if (confirmExit) finish() else confirmExit = true
             }
-            BooklineTheme(appSettings) {
+            PunchlineTheme(appSettings) {
                 ContentScreen(
                     state = state,
                     onOpenSettings = {
@@ -67,8 +67,8 @@ class ContentActivity : LoggedActivity() {
                 if (confirmExit) {
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { confirmExit = false },
-                        title = { androidx.compose.material3.Text("Закрыть Bookline?") },
-                        text = { androidx.compose.material3.Text("Вы выйдете из приложения. При следующем запуске останется форма входа.") },
+                        title = { androidx.compose.material3.Text("Закрыть Punchline?") },
+                        text = { androidx.compose.material3.Text("Вы выйдете из приложения. Следующая шутка подождёт.") },
                         confirmButton = {
                             androidx.compose.material3.TextButton(onClick = { finish() }) {
                                 androidx.compose.material3.Text("Выйти")

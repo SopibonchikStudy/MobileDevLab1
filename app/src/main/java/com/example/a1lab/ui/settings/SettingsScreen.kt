@@ -33,7 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.a1lab.R
 import com.example.a1lab.domain.ThemeMode
-import com.example.a1lab.ui.components.BooklineTextField
+import com.example.a1lab.ui.components.PunchlineTextField
 import com.example.a1lab.ui.components.InitialsBadge
 import com.example.a1lab.ui.components.SectionTitle
 import com.example.a1lab.viewmodel.SettingsUiState
@@ -89,7 +89,7 @@ fun SettingsScreen(
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("book", "leaf", "star").forEach { avatar ->
+                    listOf("laugh", "mic", "star").forEach { avatar ->
                         FilterChip(
                             selected = state.avatar == avatar,
                             onClick = { onAvatarChange(avatar) },
@@ -97,14 +97,14 @@ fun SettingsScreen(
                         )
                     }
                 }
-                BooklineTextField(
+                PunchlineTextField(
                     value = state.name,
                     onValueChange = onNameChange,
                     label = stringResource(R.string.display_name_label),
                     isError = state.nameError != null,
                     errorMessage = state.nameError
                 )
-                BooklineTextField(
+                PunchlineTextField(
                     value = state.age,
                     onValueChange = onAgeChange,
                     label = stringResource(R.string.age_label),
@@ -162,7 +162,7 @@ fun SettingsScreen(
                     Text(
                         stringResource(
                             R.string.backup_details,
-                            backup.bookCount,
+                            backup.jokeCount,
                             formatDate(backup.createdAt)
                         ),
                         style = MaterialTheme.typography.bodySmall,

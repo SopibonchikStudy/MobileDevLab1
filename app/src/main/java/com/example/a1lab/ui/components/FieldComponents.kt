@@ -13,7 +13,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun BooklineTextField(
+fun PunchlineTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,

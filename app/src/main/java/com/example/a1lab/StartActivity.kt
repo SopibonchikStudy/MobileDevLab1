@@ -16,12 +16,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.a1lab.logging.LoggedActivity
 import com.example.a1lab.navigation.RegistrationContract
 import com.example.a1lab.ui.start.StartScreen
-import com.example.a1lab.ui.theme.BooklineTheme
+import com.example.a1lab.ui.theme.PunchlineTheme
 import com.example.a1lab.viewmodel.StartEvent
 import com.example.a1lab.viewmodel.StartViewModel
 
 class StartActivity : LoggedActivity() {
-    private val container get() = (application as BooklineApplication).container
+    private val container get() = (application as PunchlineApplication).container
     private val viewModel: StartViewModel by viewModels {
         viewModelFactory { initializer { StartViewModel(container.userRepository) } }
     }
@@ -38,7 +38,7 @@ class StartActivity : LoggedActivity() {
             val state by viewModel.state.collectAsStateWithLifecycle()
             val appSettings by container.settingsRepository.settings.collectAsStateWithLifecycle()
             val snackbar = remember { SnackbarHostState() }
-            BooklineTheme(appSettings) {
+            PunchlineTheme(appSettings) {
                 androidx.compose.foundation.layout.Box {
                     StartScreen(
                         state = state,

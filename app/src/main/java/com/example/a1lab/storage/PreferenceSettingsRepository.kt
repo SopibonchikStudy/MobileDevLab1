@@ -35,7 +35,7 @@ class PreferenceSettingsRepository(context: Context) : SettingsRepository {
     }
 
     private companion object {
-        const val PREFS_NAME = "bookline_settings"
+        const val PREFS_NAME = "punchline_settings"
         const val KEY_THEME = "theme"
         const val KEY_FONT_SCALE = "font_scale"
     }

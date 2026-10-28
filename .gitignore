@@ -1,5 +1,6 @@
 *.iml
-.gradle
+.gradle/
+.kotlin/
 /local.properties
 /.idea/caches
 /.idea/libraries
@@ -8,8 +9,17 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
-/build
+build/
+**/build/
 /captures
 .externalNativeBuild
+.externalNativeBuild/
 .cxx
+.cxx/
 local.properties
+
+# Signing and environment secrets
+*.jks
+*.keystore
+keystore.properties
+.env

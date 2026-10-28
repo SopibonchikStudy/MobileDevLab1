@@ -1,94 +1,80 @@
 package com.example.a1lab
 
-import android.content.Intent
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.a1lab.domain.PunchlineState
 import com.example.a1lab.logging.LoggedActivity
-import com.example.a1lab.navigation.SettingsContract
-import com.example.a1lab.ui.content.ContentScreen
-import com.example.a1lab.ui.theme.PunchlineTheme
+import com.example.a1lab.navigation.PunchlineIntents
+import com.example.a1lab.ui.ContentScreen
+import com.example.a1lab.ui.PunchlineTheme
 import com.example.a1lab.viewmodel.ContentViewModel
 
 class ContentActivity : LoggedActivity() {
-    private val container get() = (application as PunchlineApplication).container
-    private val viewModel: ContentViewModel by viewModels {
-        viewModelFactory {
-            initializer {
-                ContentViewModel(container.userRepository, container.jokeRepository, container.backupRepository)
-            }
+    private val initial: PunchlineState by lazy {
+        requireNotNull(PunchlineIntents.contentFrom(intent)) { "Не передано состояние коллекции" }
+    }
+    private val model: ContentViewModel by viewModels { viewModelFactory { initializer { ContentViewModel(initial) } } }
+    private var settingsOpen = false
+
+    private val settings = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        settingsOpen = false
+        if (result.resultCode == Activity.RESULT_OK) {
+            PunchlineIntents.contentFrom(result.data)?.let(model::replaceState)
         }
     }
-
-    private val settingsLauncher = registerForActivityResult<String, com.example.a1lab.navigation.SettingsResult?>(SettingsContract) { settingsResult ->
-        settingsOpen = false
-        viewModel.load(showMessage = true)
-        if (settingsResult?.profileChanged == true) viewModel.reloadProfile()
-    }
-    private var settingsOpen = false
-    private var settingsLogin = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        settingsLogin = intent.getStringExtra(EXTRA_LOGIN).orEmpty()
         setContent {
-            val state by viewModel.state.collectAsStateWithLifecycle()
-            val appSettings by container.settingsRepository.settings.collectAsStateWithLifecycle()
+            val state by model.state.collectAsStateWithLifecycle()
             val snackbar = remember { SnackbarHostState() }
             var confirmExit by remember { mutableStateOf(false) }
-            BackHandler {
-                if (confirmExit) finish() else confirmExit = true
-            }
-            PunchlineTheme(appSettings) {
+            BackHandler { confirmExit = true }
+            PunchlineTheme(state.settings) {
                 ContentScreen(
                     state = state,
-                    onOpenSettings = {
-                        if (settingsOpen) return@ContentScreen
-                        settingsOpen = true
-                        settingsLauncher.launch(settingsLogin)
-                    },
-                    onRefresh = viewModel::refresh,
-                    onRestoreBackup = viewModel::restoreBackup,
+                    onSettings = ::openSettings,
+                    onRefresh = model::refresh,
+                    onRestoreBackup = { if (!model.restoreBackup()) openSettings() },
                     snackbarHost = { SnackbarHost(snackbar) }
                 )
                 if (confirmExit) {
-                    androidx.compose.material3.AlertDialog(
+                    AlertDialog(
                         onDismissRequest = { confirmExit = false },
-                        title = { androidx.compose.material3.Text("Закрыть Punchline?") },
-                        text = { androidx.compose.material3.Text("Вы выйдете из приложения. Следующая шутка подождёт.") },
-                        confirmButton = {
-                            androidx.compose.material3.TextButton(onClick = { finish() }) {
-                                androidx.compose.material3.Text("Выйти")
-                            }
-                        },
-                        dismissButton = {
-                            androidx.compose.material3.TextButton(onClick = { confirmExit = false }) {
-                                androidx.compose.material3.Text("Остаться")
-                            }
-                        }
+                        title = { Text("Закрыть Punchline?") },
+                        text = { Text("Вы выйдете из приложения. Следующая шутка подождёт.") },
+                        confirmButton = { TextButton(onClick = ::finish) { Text("Выйти") } },
+                        dismissButton = { TextButton(onClick = { confirmExit = false }) { Text("Остаться") } }
                     )
                 }
             }
-            LaunchedEffect(Unit) {
-                viewModel.events.collect { snackbar.showSnackbar(it) }
-            }
+            LaunchedEffect(Unit) { model.events.collect { snackbar.showSnackbar(it) } }
         }
     }
 
-    companion object {
-        const val EXTRA_LOGIN = "extra_login"
+    private fun openSettings() {
+        if (!settingsOpen) {
+            settingsOpen = true
+            settings.launch(PunchlineIntents.openSettings(this, model.snapshot()))
+        }
     }
 }

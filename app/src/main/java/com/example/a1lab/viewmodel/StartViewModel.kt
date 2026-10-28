@@ -1,8 +1,11 @@
 package com.example.a1lab.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.a1lab.data.UserRepository
+import com.example.a1lab.domain.AppSettings
+import com.example.a1lab.domain.HardcodedJokes
+import com.example.a1lab.domain.PasswordVerifier
+import com.example.a1lab.domain.PunchlineState
+import com.example.a1lab.domain.RegisteredAccount
 import com.example.a1lab.domain.Validation
 import com.example.a1lab.domain.ValidationResult
 import kotlinx.coroutines.channels.Channel
@@ -10,93 +13,87 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 
 data class StartUiState(
-    val isReturning: Boolean = false,
+    val returning: Boolean = false,
     val displayName: String = "",
+    val avatar: String = "smile",
     val login: String = "",
     val password: String = "",
     val loginError: String? = null,
     val passwordError: String? = null,
-    val formError: String? = null,
-    val isSubmitting: Boolean = false
+    val formError: String? = null
 )
 
 sealed interface StartEvent {
-    data class Authenticated(val login: String) : StartEvent
+    data class Authenticated(val state: PunchlineState) : StartEvent
     data class Message(val text: String) : StartEvent
 }
 
-class StartViewModel(private val userRepository: UserRepository) : ViewModel() {
-    private val mutableState = MutableStateFlow(StartUiState())
-    val state: StateFlow<StartUiState> = mutableState.asStateFlow()
-    private val eventChannel = Channel<StartEvent>(Channel.BUFFERED)
-    val events = eventChannel.receiveAsFlow()
+class StartViewModel : ViewModel() {
+    private val mutable = MutableStateFlow(StartUiState())
+    val state: StateFlow<StartUiState> = mutable.asStateFlow()
+    private val messages = Channel<StartEvent>(Channel.BUFFERED)
+    val events = messages.receiveAsFlow()
+    private var account: RegisteredAccount? = null
 
-    init {
-        loadExistingUser()
+    fun login(value: String) {
+        mutable.value = mutable.value.copy(login = value, loginError = null, formError = null)
     }
 
-    fun updateLogin(value: String) {
-        mutableState.value = mutableState.value.copy(login = value, loginError = null, formError = null)
+    fun password(value: String) {
+        mutable.value = mutable.value.copy(password = value, passwordError = null, formError = null)
     }
 
-    fun updatePassword(value: String) {
-        mutableState.value = mutableState.value.copy(password = value, passwordError = null, formError = null)
-    }
-
-    fun onRegistrationReturned(login: String) {
-        mutableState.value = mutableState.value.copy(
-            login = login,
+    fun registrationReturned(registered: RegisteredAccount) {
+        account = registered
+        mutable.value = mutable.value.copy(
+            returning = true,
+            displayName = registered.profile.displayName,
+            avatar = registered.profile.avatar,
+            login = registered.profile.login,
             password = "",
-            formError = null,
-            isReturning = true
+            formError = null
         )
-        loadExistingUser(showMessage = true)
+        messages.trySend(StartEvent.Message("Аккаунт создан. Введите пароль."))
     }
 
     fun authenticate() {
-        val current = mutableState.value
-        if (current.isSubmitting) return
-        val loginValidation = Validation.validateLogin(current.login)
-        val passwordChars = current.password.toCharArray()
-        val passwordValidation = Validation.validatePassword(passwordChars)
-        if (loginValidation is ValidationResult.Invalid || passwordValidation is ValidationResult.Invalid) {
-            mutableState.value = current.copy(
-                loginError = (loginValidation as? ValidationResult.Invalid)?.message,
-                passwordError = (passwordValidation as? ValidationResult.Invalid)?.message
+        val current = mutable.value
+        val password = current.password.toCharArray()
+        val loginCheck = Validation.login(current.login)
+        val passwordCheck = Validation.password(password)
+        if (loginCheck is ValidationResult.Invalid || passwordCheck is ValidationResult.Invalid) {
+            mutable.value = current.copy(
+                loginError = (loginCheck as? ValidationResult.Invalid)?.message,
+                passwordError = (passwordCheck as? ValidationResult.Invalid)?.message
             )
-            passwordChars.fill('\u0000')
+            password.fill('\u0000')
             return
         }
-        mutableState.value = current.copy(isSubmitting = true, formError = null)
-        viewModelScope.launch {
-            val result = userRepository.authenticate(current.login, passwordChars)
-            result.onSuccess { profile ->
-                mutableState.value = mutableState.value.copy(password = "", isSubmitting = false)
-                eventChannel.send(StartEvent.Authenticated(profile.login))
-            }.onFailure { error ->
-                mutableState.value = mutableState.value.copy(
-                    isSubmitting = false,
-                    formError = error.message ?: "Неверный логин или пароль"
-                )
-            }
-            passwordChars.fill('\u0000')
-        }
-    }
 
-    private fun loadExistingUser(showMessage: Boolean = false) {
-        viewModelScope.launch {
-            val profile = userRepository.getCurrentProfile()
-            if (profile != null) {
-                mutableState.value = mutableState.value.copy(
-                    isReturning = true,
-                    displayName = profile.displayName,
-                    login = if (mutableState.value.login.isBlank()) profile.login else mutableState.value.login
-                )
-                if (showMessage) eventChannel.send(StartEvent.Message("Аккаунт создан. Введите пароль."))
-            }
+        val registered = account
+        if (registered == null || !registered.profile.login.equals(current.login.trim(), ignoreCase = true)) {
+            mutable.value = current.copy(formError = "Аккаунт не найден. Создайте новый или повторите регистрацию.")
+            password.fill('\u0000')
+            return
         }
+        if (!PasswordVerifier.matches(password, registered.credentials)) {
+            mutable.value = current.copy(formError = "Неверный логин или пароль")
+            password.fill('\u0000')
+            return
+        }
+
+        password.fill('\u0000')
+        mutable.value = current.copy(password = "", formError = null)
+        messages.trySend(
+            StartEvent.Authenticated(
+                PunchlineState(
+                    profile = registered.profile,
+                    settings = AppSettings(),
+                    jokes = HardcodedJokes.shuffled()
+                )
+            )
+        )
     }
 }

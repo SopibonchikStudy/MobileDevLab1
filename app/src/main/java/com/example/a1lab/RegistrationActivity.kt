@@ -1,62 +1,51 @@
 package com.example.a1lab
 
-import android.content.Intent
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.a1lab.domain.AppSettings
 import com.example.a1lab.logging.LoggedActivity
-import com.example.a1lab.ui.registration.RegistrationScreen
-import com.example.a1lab.ui.theme.PunchlineTheme
+import com.example.a1lab.navigation.PunchlineIntents
+import com.example.a1lab.ui.PunchlineTheme
+import com.example.a1lab.ui.RegistrationScreen
 import com.example.a1lab.viewmodel.RegistrationViewModel
 
 class RegistrationActivity : LoggedActivity() {
-    private val container get() = (application as PunchlineApplication).container
-    private val viewModel: RegistrationViewModel by viewModels {
-        viewModelFactory { initializer { RegistrationViewModel(container.userRepository) } }
-    }
+    private val model: RegistrationViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val settings = PunchlineIntents.settingsFrom(intent) ?: AppSettings()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                finish()
-            }
+            override fun handleOnBackPressed() = finish()
         })
         setContent {
-            val state by viewModel.state.collectAsStateWithLifecycle()
-            val appSettings by container.settingsRepository.settings.collectAsStateWithLifecycle()
-            PunchlineTheme(appSettings) {
+            val state by model.state.collectAsStateWithLifecycle()
+            PunchlineTheme(settings) {
                 RegistrationScreen(
-                    state = state,
-                    onNameChange = viewModel::updateName,
-                    onLoginChange = viewModel::updateLogin,
-                    onAgeChange = viewModel::updateAge,
-                    onPasswordChange = viewModel::updatePassword,
-                    onConfirmationChange = viewModel::updatePasswordConfirmation,
-                    onRegister = viewModel::register,
-                    onBack = { finish() }
+                    state,
+                    model::name,
+                    model::login,
+                    model::age,
+                    model::password,
+                    model::confirmation,
+                    model::register,
+                    ::finish
                 )
             }
-            androidx.compose.runtime.LaunchedEffect(Unit) {
-                viewModel.events.collect { login ->
-                    setResult(
-                        RESULT_OK,
-                        Intent().putExtra(EXTRA_LOGIN, login)
-                    )
+            LaunchedEffect(Unit) {
+                model.registered.collect { account ->
+                    setResult(Activity.RESULT_OK, PunchlineIntents.registeredResult(account))
                     finish()
                 }
             }
         }
-    }
-
-    companion object {
-        const val EXTRA_LOGIN = "extra_login"
     }
 }

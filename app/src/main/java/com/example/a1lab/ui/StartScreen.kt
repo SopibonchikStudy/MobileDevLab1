@@ -15,6 +15,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,9 +32,11 @@ fun StartScreen(
     onLogin: (String) -> Unit,
     onPassword: (String) -> Unit,
     onSignIn: () -> Unit,
-    onRegister: () -> Unit
+    onRegister: () -> Unit,
+    snackbar: SnackbarHostState
 ) {
-    Page {
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+        Page {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -72,5 +76,7 @@ fun StartScreen(
             }
             Text(stringResource(R.string.local_storage_note), style = MaterialTheme.typography.bodySmall)
         }
+        }
+        SnackbarHost(snackbar, Modifier.align(androidx.compose.ui.Alignment.BottomCenter))
     }
 }

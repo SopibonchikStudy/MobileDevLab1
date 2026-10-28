@@ -47,6 +47,7 @@ fun ContentScreen(
     onSettings: () -> Unit,
     onRefresh: () -> Unit,
     onRestoreBackup: () -> Unit,
+    onExit: () -> Unit,
     snackbarHost: @Composable () -> Unit
 ) {
     Scaffold(
@@ -59,7 +60,7 @@ fun ContentScreen(
         }
     ) { padding ->
         when {
-            state.jokes.isEmpty() -> EmptyContent(onRefresh, onRestoreBackup, onSettings, Modifier.fillMaxSize().padding(padding))
+            state.jokes.isEmpty() -> EmptyContent(onRefresh, onRestoreBackup, onSettings, onExit, Modifier.fillMaxSize().padding(padding))
             else -> LazyColumn(
                 Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(18.dp),
@@ -88,7 +89,13 @@ fun ContentScreen(
 }
 
 @Composable
-private fun EmptyContent(onRefresh: () -> Unit, onRestoreBackup: () -> Unit, onSettings: () -> Unit, modifier: Modifier) {
+private fun EmptyContent(
+    onRefresh: () -> Unit,
+    onRestoreBackup: () -> Unit,
+    onSettings: () -> Unit,
+    onExit: () -> Unit,
+    modifier: Modifier
+) {
     Column(modifier.padding(28.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(stringResource(R.string.empty_catalog_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -97,6 +104,7 @@ private fun EmptyContent(onRefresh: () -> Unit, onRestoreBackup: () -> Unit, onS
         Button(onClick = onRefresh, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.try_again)) }
         OutlinedButton(onClick = onRestoreBackup, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.restore_backup)) }
         OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.open_settings)) }
+        OutlinedButton(onClick = onExit, modifier = Modifier.fillMaxWidth()) { Text("Выйти") }
     }
 }
 

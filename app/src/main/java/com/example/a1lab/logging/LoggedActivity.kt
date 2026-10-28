@@ -1,30 +1,10 @@
 package com.example.a1lab.logging
 
-import android.content.Context
-import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import com.example.a1lab.domain.LanguageMode
-import com.example.a1lab.navigation.PunchlineIntents
-import java.util.Locale
 
 open class LoggedActivity : ComponentActivity() {
-    override fun attachBaseContext(newBase: Context) {
-        val language = PunchlineIntents.settingsFrom(intent)?.language ?: LanguageMode.SYSTEM
-        val locale = when (language) {
-            LanguageMode.RU -> Locale.forLanguageTag("ru")
-            LanguageMode.EN -> Locale.ENGLISH
-            LanguageMode.SYSTEM -> null
-        }
-        if (locale == null) {
-            super.attachBaseContext(newBase)
-            return
-        }
-        val configuration = Configuration(newBase.resources.configuration).apply { setLocale(locale) }
-        super.attachBaseContext(newBase.createConfigurationContext(configuration))
-    }
-
     protected fun logLifecycle(method: String) {
         Log.d(TAG, "${this::class.simpleName}: $method")
     }
@@ -65,6 +45,6 @@ open class LoggedActivity : ComponentActivity() {
     }
 
     companion object {
-        const val TAG = "Lab1Lifecycle"
+        const val TAG = "Lab2Lifecycle"
     }
 }

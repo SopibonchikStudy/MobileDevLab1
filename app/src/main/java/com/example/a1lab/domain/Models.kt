@@ -1,23 +1,28 @@
 package com.example.a1lab.domain
 
-import java.io.Serializable
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
+@Serializable
 enum class LanguageMode { SYSTEM, RU, EN }
 
+@Serializable
 data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val fontScale: Float = 1f,
     val language: LanguageMode = LanguageMode.SYSTEM
-) : Serializable
+)
 
+@Serializable
 data class UserProfile(
     val login: String,
     val displayName: String,
     val age: Int? = null,
     val avatar: String = "smile"
-) : Serializable
+)
 
+@Serializable
 data class JokeCard(
     val id: Int,
     val category: JokeCategory,
@@ -27,27 +32,32 @@ data class JokeCard(
     val safe: Boolean,
     val language: String,
     val wordCount: Int
-) : Serializable
+)
 
+@Serializable
 data class PasswordCredentials(
     val saltHex: String,
     val hashHex: String
-) : Serializable
+)
 
+@Serializable
 data class RegisteredAccount(
     val profile: UserProfile,
     val credentials: PasswordCredentials
-) : Serializable
+)
 
+@Serializable
 data class PunchlineState(
     val profile: UserProfile,
     val settings: AppSettings,
     val jokes: List<JokeCard>,
     val backup: List<JokeCard>? = null
-) : Serializable
+)
 
+@Serializable
 enum class JokeCategory { PROGRAMMING, MISC, DARK, PUN, SPOOKY, CHRISTMAS, UNKNOWN }
 
+@Serializable
 enum class JokeType { SINGLE, TWOPART, UNKNOWN }
 
 sealed interface ValidationResult {

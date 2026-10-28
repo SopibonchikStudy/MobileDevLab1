@@ -30,12 +30,24 @@ sealed interface StartEvent {
     data class Message(val text: String) : StartEvent
 }
 
-class StartViewModel : ViewModel() {
-    private val mutable = MutableStateFlow(StartUiState())
+class StartViewModel(
+    private val settings: AppSettings = AppSettings(),
+    initialAccount: RegisteredAccount? = null
+) : ViewModel() {
+    private val mutable = MutableStateFlow(
+        initialAccount?.let { registered ->
+            StartUiState(
+                returning = true,
+                displayName = registered.profile.displayName,
+                avatar = registered.profile.avatar,
+                login = registered.profile.login
+            )
+        } ?: StartUiState()
+    )
     val state: StateFlow<StartUiState> = mutable.asStateFlow()
     private val messages = Channel<StartEvent>(Channel.BUFFERED)
     val events = messages.receiveAsFlow()
-    private var account: RegisteredAccount? = null
+    private var account: RegisteredAccount? = initialAccount
 
     fun login(value: String) {
         mutable.value = mutable.value.copy(login = value, loginError = null, formError = null)
@@ -90,7 +102,7 @@ class StartViewModel : ViewModel() {
             StartEvent.Authenticated(
                 PunchlineState(
                     profile = registered.profile,
-                    settings = AppSettings(),
+                    settings = settings,
                     jokes = HardcodedJokes.shuffled()
                 )
             )
